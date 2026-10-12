@@ -108,7 +108,7 @@
       color: var(--foreground);
       font-family: var(--font-mono);
       font-size: 0.84em;
-      white-space: nowrap;
+      overflow-wrap: anywhere;
     }
 
     /* Code blocks */

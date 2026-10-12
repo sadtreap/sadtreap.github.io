@@ -3,6 +3,8 @@
  *
  * The footnote list at the end of the post stays as it is; the copy is
  * hidden from assistive tech and shown in the side column on wide screens.
+ * Notes with block content (lists, code, tables) stay in the list only,
+ * since a block inside the inline note would break out of it.
  */
 type Node = {
   type: string;
@@ -20,8 +22,15 @@ function walk(node: Node, visit: (node: Node) => void) {
   node.children?.forEach(child => walk(child, visit));
 }
 
-function inlineContent(item: Node): Node[] {
-  return (item.children ?? [])
+const isBlank = (node: Node) =>
+  node.type === "text" && !String(node.value ?? "").trim();
+
+function inlineContent(item: Node): Node[] | null {
+  const children = item.children ?? [];
+  if (children.some(child => !isElement(child, "p") && !isBlank(child))) {
+    return null;
+  }
+  return children
     .flatMap(child =>
       isElement(child, "p") ? (child.children ?? []) : [child]
     )
@@ -43,7 +52,8 @@ export function rehypeSidenotes() {
         isElement(node, "li") &&
         String(node.properties?.id ?? "").includes("fn-")
       ) {
-        notes.set(String(node.properties?.id), inlineContent(node));
+        const content = inlineContent(node);
+        if (content) notes.set(String(node.properties?.id), content);
       }
     });
     if (notes.size === 0) return;
