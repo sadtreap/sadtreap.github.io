@@ -2,33 +2,44 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-foreground-soft: var(--foreground-soft);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
-  --font-app: var(--font-google-sans-code);
+  --color-band: var(--band);
+  --font-app:
+    "Pretendard Variable", Pretendard, "Apple SD Gothic Neo", "Malgun Gothic",
+    sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
 /* Light theme values */
 :root,
 [data-theme="light"] {
-  --background: #fdfdfd;
-  --foreground: #282728;
-  --accent: #006cac;
+  --background: #fcfcfa;
+  --foreground: #18181a;
+  --foreground-soft: #45454a;
+  --accent: #c8372d;
   --accent-foreground: #ffffff;
-  --muted: #e6e6e6;
-  --muted-foreground: #6b7280;
-  --border: #ece9e9;
+  --muted: #f4f3ef;
+  --muted-foreground: #73737a;
+  --border: #e7e6e2;
+  --band: #f4f3ef;
+  --margin-rule: #e6857d;
 }
 
 /* Dark theme values */
 [data-theme="dark"] {
-  --background: #212737;
-  --foreground: #eaedf3;
-  --accent: #ff6b01;
-  --accent-foreground: #ffffff;
-  --muted: #343f60;
-  --muted-foreground: #afb9ca;
-  --border: #ab4b08;
+  --background: #151516;
+  --foreground: #ececec;
+  --foreground-soft: #c4c4c7;
+  --accent: #ff6b5d;
+  --accent-foreground: #151516;
+  --muted: #1e1e20;
+  --muted-foreground: #8b8b91;
+  --border: #29292c;
+  --band: #1b1b1d;
+  --margin-rule: #7a3a35;
 }

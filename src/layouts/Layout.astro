@@ -5,6 +5,7 @@ import { getRelativeLocaleUrl } from "astro:i18n";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { getAssetPath } from "@/utils/withBase";
 import config from "@/config";
+import "pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css";
 import "katex/dist/katex.min.css";
 import "@/styles/global.css";
 
@@ -45,10 +46,7 @@ const rssHref = getRelativeLocaleUrl(
     <meta name="generator" content={Astro.generator} />
 
     <!-- Font -->
-    <Font
-      cssVariable="--font-google-sans-code"
-      preload={[{ subset: "latin", weight: 400, style: "normal" }]}
-    />
+    <Font cssVariable="--font-jetbrains-mono" />
 
     <!-- Primary meta -->
     <title>{title}</title>
@@ -117,9 +115,11 @@ const rssHref = getRelativeLocaleUrl(
     <ClientRouter />
   </head>
   <body
-    class="bg-background font-app text-foreground selection:bg-accent/75 selection:text-accent-foreground flex min-h-svh flex-col"
+    class="bg-background font-app text-foreground selection:bg-accent selection:text-accent-foreground flex min-h-svh flex-col"
   >
-    <slot />
+    <div class="page">
+      <slot />
+    </div>
     <script>
       import "@/scripts/theme";
     </script>

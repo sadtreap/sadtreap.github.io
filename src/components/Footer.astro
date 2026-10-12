@@ -1,39 +1,41 @@
 ---
-import type { HTMLAttributes } from "astro/types";
-import Socials from "./Socials.astro";
+import { getRelativeLocaleUrl } from "astro:i18n";
 import { useTranslations } from "@/i18n";
 import config from "@/config";
 
-type Props = {
-  noMarginTop?: boolean;
-} & HTMLAttributes<"footer">;
-
-const { noMarginTop = false, class: className, ...attrs } = Astro.props;
-
-const t = useTranslations(Astro.currentLocale);
+const { site, socials } = config;
+const locale = Astro.currentLocale ?? site.lang;
+const t = useTranslations(locale);
 const currentYear = new Date().getFullYear();
-const { author } = config.site;
 ---
 
-<footer
-  class:list={["app-layout", { "mt-auto": !noMarginTop }, className]}
-  {...attrs}
->
-  <div
-    class="border-border flex flex-col items-center justify-between border-t py-6 md:flex-row-reverse md:py-4"
-  >
-    <Socials />
-    <div class="my-2 flex flex-col items-center whitespace-nowrap md:flex-row">
-      <span>{`${t.footer.copyright} © ${currentYear} ${author}`}</span>
-      <span class="hidden md:inline">&nbsp;|&nbsp;</span>
-      <span>
-        {t.footer.license}{" "}
-        <a
-          href="https://creativecommons.org/licenses/by/4.0/"
-          class="underline decoration-dashed underline-offset-4"
-          rel="license">CC BY 4.0</a
-        >
-      </span>
-    </div>
-  </div>
+<footer class="site-footer row">
+  <span class="main">© {currentYear} {site.author}</span>
+  <span class="side links">
+    <a href="https://creativecommons.org/licenses/by/4.0/" rel="license">
+      {t.footer.license}
+    </a>
+    {socials.map(({ name, url }) => <a href={url}>{name}</a>)}
+    <a href={getRelativeLocaleUrl(locale, "rss.xml")}>RSS</a>
+  </span>
 </footer>
+
+<style>
+  .site-footer {
+    margin-top: auto;
+    padding-block: 1.625rem 3.25rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+  }
+
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.875rem;
+  }
+
+  .links a:hover {
+    color: var(--foreground);
+  }
+</style>

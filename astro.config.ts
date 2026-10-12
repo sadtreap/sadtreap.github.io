@@ -8,8 +8,6 @@ import tailwindcss from "@tailwindcss/vite";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import { unified } from "@astrojs/markdown-remark";
-import remarkToc from "remark-toc";
-import remarkCollapse from "remark-collapse";
 import remarkMath from "remark-math";
 import rehypeCallouts from "rehype-callouts";
 import rehypeKatex from "rehype-katex";
@@ -19,6 +17,8 @@ import {
   transformerNotationWordHighlight,
 } from "@shikijs/transformers";
 import { transformerFileName } from "./src/utils/transformers/fileName";
+import { rehypeSidenotes } from "./src/utils/rehypeSidenotes";
+import { rehypeTableScroll } from "./src/utils/rehypeTableScroll";
 import config from "./astro-paper.config";
 
 export default defineConfig({
@@ -39,19 +39,24 @@ export default defineConfig({
   },
   markdown: {
     processor: unified({
-      remarkPlugins: [
-        remarkMath,
-        remarkToc,
-        [remarkCollapse, { test: "Table of contents" }],
+      remarkPlugins: [remarkMath],
+      rehypePlugins: [
+        rehypeCallouts,
+        rehypeKatex,
+        rehypeSidenotes,
+        rehypeTableScroll,
       ],
-      rehypePlugins: [rehypeCallouts, rehypeKatex],
+      remarkRehype: {
+        footnoteLabel: "각주",
+        footnoteBackLabel: "본문으로 돌아가기",
+      },
     }),
     shikiConfig: {
-      themes: { light: "min-light", dark: "night-owl" },
+      themes: { light: "min-light", dark: "min-dark" },
       defaultColor: false,
       wrap: false,
       transformers: [
-        transformerFileName({ style: "v2", hideDot: false }),
+        transformerFileName(),
         transformerNotationHighlight(),
         transformerNotationWordHighlight(),
         transformerNotationDiff({ matchAlgorithm: "v3" }),
@@ -63,13 +68,12 @@ export default defineConfig({
   },
   fonts: [
     {
-      name: "Google Sans Code",
-      cssVariable: "--font-google-sans-code",
+      name: "JetBrains Mono",
+      cssVariable: "--font-jetbrains-mono",
       provider: fontProviders.google(),
-      fallbacks: ["Apple SD Gothic Neo", "Malgun Gothic", "monospace"],
-      weights: [300, 400, 500, 600, 700],
-      styles: ["normal", "italic"],
-      formats: ["woff", "ttf"],
+      fallbacks: ["monospace"],
+      weights: [400, 500, 600],
+      styles: ["normal"],
     },
   ],
   env: {

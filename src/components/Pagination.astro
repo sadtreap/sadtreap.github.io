@@ -1,9 +1,6 @@
 ---
 import type { Page } from "astro";
 import type { CollectionEntry } from "astro:content";
-import IconArrowLeft from "@/assets/icons/IconArrowLeft.svg";
-import IconArrowRight from "@/assets/icons/IconArrowRight.svg";
-import LinkButton from "./LinkButton.astro";
 import { useTranslations } from "@/i18n";
 
 type Props = {
@@ -17,30 +14,54 @@ const t = useTranslations(Astro.currentLocale);
 
 {
   page.lastPage > 1 && (
-    <nav
-      class="mt-auto mb-8 flex justify-center gap-4"
-      role="navigation"
-      aria-label="Pagination Navigation"
-    >
-      <LinkButton
-        disabled={!page.url.prev}
-        href={page.url.prev as string}
-        class:list={["select-none", { "opacity-50": !page.url.prev }]}
-        aria-label={t.a11y.goToPreviousPage}
-      >
-        <IconArrowLeft class="inline-block rtl:rotate-180" />
-        {t.pagination.prev}
-      </LinkButton>
-      {page.currentPage} / {page.lastPage}
-      <LinkButton
-        disabled={!page.url.next}
-        href={page.url.next as string}
-        class:list={["select-none", { "opacity-50": !page.url.next }]}
-        aria-label={t.a11y.goToNextPage}
-      >
-        {t.pagination.next}
-        <IconArrowRight class="inline-block rtl:rotate-180" />
-      </LinkButton>
+    <nav class="pagination row" aria-label="Pagination">
+      <div class="main">
+        {page.url.prev ? (
+          <a href={page.url.prev} aria-label={t.a11y.goToPreviousPage}>
+            ← {t.pagination.prev}
+          </a>
+        ) : (
+          <span aria-disabled="true">← {t.pagination.prev}</span>
+        )}
+        <span class="count">
+          {page.currentPage} / {page.lastPage}
+        </span>
+        {page.url.next ? (
+          <a href={page.url.next} aria-label={t.a11y.goToNextPage}>
+            {t.pagination.next} →
+          </a>
+        ) : (
+          <span aria-disabled="true">{t.pagination.next} →</span>
+        )}
+      </div>
     </nav>
   )
 }
+
+<style>
+  .pagination {
+    padding-block: 1.5rem 3rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.875rem;
+  }
+
+  .main {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  [aria-disabled] {
+    color: var(--muted-foreground);
+    opacity: 0.6;
+  }
+
+  .count {
+    color: var(--muted-foreground);
+    font-variant-numeric: tabular-nums;
+  }
+</style>

@@ -4,14 +4,13 @@ import type { GetStaticPathsOptions } from "astro";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
 import Main from "@/components/Main.astro";
-import Breadcrumb from "@/components/Breadcrumb.astro";
-import Card from "@/components/Card.astro";
+import PostItem from "@/components/PostItem.astro";
 import Footer from "@/components/Footer.astro";
 import Pagination from "@/components/Pagination.astro";
 import { getUniqueTags } from "@/utils/getUniqueTags";
 import { getSortedPosts } from "@/utils/getSortedPosts";
 import { slugifyAll } from "@/utils/slugify";
-import { useTranslations } from "@/i18n";
+import { tplStr, useTranslations } from "@/i18n";
 import config from "@/config";
 
 export async function getStaticPaths({ paginate }: GetStaticPathsOptions) {
@@ -39,19 +38,13 @@ const t = useTranslations(locale);
 
 <Layout title={`${t.pages.tagTitle}: ${tagName} | ${config.site.title}`}>
   <Header />
-
-  <Breadcrumb />
-
-  <Main
-    pageTitle={`${t.pages.tagTitle}: ${tagName}`}
-    pageDesc={`${t.pages.tagDesc} "${tagName}".`}
-  >
-    <ul>
-      {page.data.map(data => <Card {...data} />)}
-    </ul>
+  <Main pageTitle={tagName}>
+    <Fragment slot="side">
+      <span class="label">{t.pages.tagTitle}</span>
+      <span>{tplStr(t.pages.postCount, { count: page.total })}</span>
+    </Fragment>
+    {page.data.map(post => <PostItem {post} />)}
   </Main>
-
   <Pagination {page} />
-
-  <Footer noMarginTop={page.lastPage > 1} />
+  <Footer />
 </Layout>

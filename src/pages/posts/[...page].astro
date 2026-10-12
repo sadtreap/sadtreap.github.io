@@ -1,15 +1,15 @@
 ---
 import type { GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
+import { getRelativeLocaleUrl } from "astro:i18n";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
-import Breadcrumb from "@/components/Breadcrumb.astro";
 import Main from "@/components/Main.astro";
-import Card from "@/components/Card.astro";
+import PostItem from "@/components/PostItem.astro";
 import Footer from "@/components/Footer.astro";
 import Pagination from "@/components/Pagination.astro";
 import { getSortedPosts } from "@/utils/getSortedPosts";
-import { useTranslations } from "@/i18n";
+import { tplStr, useTranslations } from "@/i18n";
 import config from "@/config";
 
 export const getStaticPaths = (async ({ paginate }) => {
@@ -25,16 +25,22 @@ const t = useTranslations(locale);
 
 <Layout title={`${t.pages.postsTitle} | ${config.site.title}`}>
   <Header />
-
-  <Breadcrumb />
-
-  <Main pageTitle={t.pages.postsTitle} pageDesc={t.pages.postsDesc}>
-    <ul>
-      {page.data.map(data => <Card {...data} />)}
-    </ul>
+  <Main pageTitle={t.pages.postsTitle}>
+    <Fragment slot="side">
+      <span>{tplStr(t.pages.postCount, { count: page.total })}</span>
+      {
+        config.features.showArchives && (
+          <a
+            class="text-accent"
+            href={getRelativeLocaleUrl(locale, "archives")}
+          >
+            {t.nav.archives} →
+          </a>
+        )
+      }
+    </Fragment>
+    {page.data.map(post => <PostItem {post} />)}
   </Main>
-
   <Pagination {page} />
-
-  <Footer noMarginTop={page.lastPage > 1} />
+  <Footer />
 </Layout>

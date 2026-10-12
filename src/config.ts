@@ -28,14 +28,10 @@ const config: ResolvedAstroPaperConfig = {
   },
   features: {
     lightAndDarkMode: userConfig.features?.lightAndDarkMode ?? true,
-    dynamicOgImage: userConfig.features?.dynamicOgImage ?? true,
     showArchives: userConfig.features?.showArchives ?? true,
-    showBackButton: userConfig.features?.showBackButton ?? true,
-    editPost: userConfig.features?.editPost ?? { enabled: false },
     search: userConfig.features?.search ?? "pagefind",
   },
   socials: userConfig.socials ?? [],
-  shareLinks: userConfig.shareLinks ?? [],
 };
 
 export default config;

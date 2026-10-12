@@ -1,6 +1,5 @@
 export interface UIStrings {
   nav: {
-    home: string;
     posts: string;
     tags: string;
     projects: string;
@@ -9,56 +8,47 @@ export interface UIStrings {
     search: string;
   };
   post: {
-    publishedAt: string;
-    updatedAt: string;
-    sharePostIntro: string;
-    sharePostOn: string;
-    sharePostViaEmail: string;
-    tagLabel: string;
-    backToTop: string;
-    goBack: string;
-    editPage: string;
+    readMore: string;
+    readingTime: string;
+    contents: string;
+    author: string;
+    published: string;
+    updated: string;
+    topics: string;
+    reading: string;
+    minutes: string;
+    reuse: string;
+    reuseText: string;
+    citation: string;
     previousPost: string;
     nextPost: string;
+    morePosts: string;
   };
   pagination: {
     prev: string;
     next: string;
-    page: string;
   };
   home: {
-    socialLinks: string;
-    featured: string;
     recentPosts: string;
     allPosts: string;
+    dateAndReading: string;
   };
   footer: {
-    copyright: string;
     license: string;
   };
   pages: {
     tagTitle: string;
-    tagDesc: string;
-
     tagsTitle: string;
-    tagsDesc: string;
-
+    postCount: string;
     postsTitle: string;
-    postsDesc: string;
-
     archivesTitle: string;
-    archivesDesc: string;
-
     searchTitle: string;
-    searchDesc: string;
   };
   a11y: {
     skipToContent: string;
     openMenu: string;
     closeMenu: string;
     toggleTheme: string;
-    searchPlaceholder: string;
-    noResults: string;
     goToPreviousPage: string;
     goToNextPage: string;
   };

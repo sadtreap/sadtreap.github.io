@@ -2,7 +2,6 @@
 import { getCollection, render, type CollectionEntry } from "astro:content";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
-import Breadcrumb from "@/components/Breadcrumb.astro";
 import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
 import config from "@/config";
@@ -26,12 +25,12 @@ const { Content } = await render(page);
   {canonicalURL}
 >
   <Header />
-
-  <Breadcrumb />
-
-  <Main pageTitle={title} class="app-prose">
-    <Content />
+  <Main pageTitle={title}>
+    <div class="row">
+      <div class="main app-prose">
+        <Content />
+      </div>
+    </div>
   </Main>
-
   <Footer />
 </Layout>

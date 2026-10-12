@@ -13,18 +13,14 @@ export default defineAstroPaperConfig({
     dir: "ltr",
   },
   posts: {
-    perPage: 4,
-    perIndex: 4,
+    perPage: 10,
+    perIndex: 8,
     scheduledPostMargin: 15 * 60 * 1000,
   },
   features: {
     lightAndDarkMode: true,
-    dynamicOgImage: false,
     showArchives: true,
-    showBackButton: true,
-    editPost: { enabled: false },
     search: "pagefind",
   },
-  socials: [{ name: "github", url: "https://github.com/sadtreap" }],
-  shareLinks: [],
+  socials: [{ name: "GitHub", url: "https://github.com/sadtreap" }],
 });

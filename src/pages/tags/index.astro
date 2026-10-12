@@ -1,17 +1,22 @@
 ---
 import { getCollection } from "astro:content";
+import { getRelativeLocaleUrl } from "astro:i18n";
 import Layout from "@/layouts/Layout.astro";
 import Header from "@/components/Header.astro";
-import Breadcrumb from "@/components/Breadcrumb.astro";
 import Main from "@/components/Main.astro";
 import Footer from "@/components/Footer.astro";
-import Tag from "@/components/Tag.astro";
 import { getUniqueTags } from "@/utils/getUniqueTags";
-import { useTranslations } from "@/i18n";
+import { getSortedPosts } from "@/utils/getSortedPosts";
+import { slugifyAll } from "@/utils/slugify";
+import { tplStr, useTranslations } from "@/i18n";
 import config from "@/config";
 
-const posts = await getCollection("posts", ({ data }) => !data.draft);
-const tags = getUniqueTags(posts);
+const posts = getSortedPosts(await getCollection("posts"));
+const tags = getUniqueTags(posts).map(tag => ({
+  ...tag,
+  count: posts.filter(({ data }) => slugifyAll(data.tags).includes(tag.tag))
+    .length,
+}));
 
 const locale = Astro.currentLocale ?? config.site.lang;
 const t = useTranslations(locale);
@@ -19,14 +24,43 @@ const t = useTranslations(locale);
 
 <Layout title={`${t.pages.tagsTitle} | ${config.site.title}`}>
   <Header />
-
-  <Breadcrumb />
-
-  <Main pageTitle={t.pages.tagsTitle} pageDesc={t.pages.tagsDesc}>
-    <ul class="flex flex-wrap gap-6">
-      {tags.map(({ tag, tagName }) => <Tag {tag} {tagName} />)}
+  <Main pageTitle={t.pages.tagsTitle}>
+    <ul>
+      {
+        tags.map(({ tag, tagName, count }) => (
+          <li class="tag-row row">
+            <a
+              class="main"
+              href={getRelativeLocaleUrl(locale, `tags/${tag}/`)}
+              transition:name={tag}
+            >
+              {tagName}
+            </a>
+            <span class="side note">
+              {tplStr(t.pages.postCount, { count })}
+            </span>
+          </li>
+        ))
+      }
     </ul>
   </Main>
-
   <Footer />
 </Layout>
+
+<style>
+  .tag-row {
+    align-items: baseline;
+    padding-block: 0.875rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .tag-row a {
+    font-size: 1.125rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
+  .tag-row a:hover {
+    color: var(--accent);
+  }
+</style>
