@@ -4,9 +4,10 @@ export default defineAstroPaperConfig({
   site: {
     url: "https://sadtreap.github.io/",
     title: "sadtreap's blog",
-    description: "tomorrow is another day",
+    description: "Personal research and practical experiences.",
     author: "JooYeong Kim",
     profile: "https://github.com/sadtreap",
+    focus: "C++, 어셈블리, 알고리즘, 벤치마크",
     ogImage: "default-og.png",
     lang: "ko",
     timezone: "Asia/Seoul",

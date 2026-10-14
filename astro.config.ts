@@ -17,6 +17,7 @@ import {
   transformerNotationWordHighlight,
 } from "@shikijs/transformers";
 import { transformerFileName } from "./src/utils/transformers/fileName";
+import { rehypeInlineCode } from "./src/utils/rehypeInlineCode";
 import { rehypeSidenotes } from "./src/utils/rehypeSidenotes";
 import { rehypeTableScroll } from "./src/utils/rehypeTableScroll";
 import config from "./astro-paper.config";
@@ -45,6 +46,7 @@ export default defineConfig({
         rehypeKatex,
         rehypeSidenotes,
         rehypeTableScroll,
+        rehypeInlineCode,
       ],
       remarkRehype: {
         footnoteLabel: "각주",

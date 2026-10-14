@@ -108,7 +108,13 @@
       color: var(--foreground);
       font-family: var(--font-mono);
       font-size: 0.84em;
-      overflow-wrap: anywhere;
+      /* Wraps long names, but only splits a token that can't fit on a line. */
+      overflow-wrap: break-word;
+    }
+
+    /* Short tokens such as "-O2" (marked by rehypeInlineCode) never split. */
+    :not(pre) > code.nowrap {
+      white-space: nowrap;
     }
 
     /* Code blocks */
@@ -305,6 +311,12 @@
     .footnotes {
       position: relative;
       margin-top: 4.5rem;
+
+      /* The "각주" heading is for screen readers; the side label shows instead. */
+      > h2 {
+        @apply sr-only;
+      }
+
       padding-block: 1.375rem;
       background: var(--band);
       box-shadow: 0 0 0 100vmax var(--band);

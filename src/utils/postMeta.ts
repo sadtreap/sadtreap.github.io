@@ -30,6 +30,16 @@ export const formatDate = (date: Date, timezone?: string) =>
 export const formatWeekday = (date: Date, timezone?: string) =>
   format(date, timezone, { weekday: "long" });
 
+/** e.g. "2026.08" */
+export const formatYearMonth = (date: Date, timezone?: string) =>
+  new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone ?? config.site.timezone,
+    year: "numeric",
+    month: "2-digit",
+  })
+    .format(date)
+    .replace("-", ".");
+
 /** e.g. "2026년 10월" */
 export const formatMonth = (date: Date, timezone?: string) =>
   format(date, timezone, { year: "numeric", month: "long" });
