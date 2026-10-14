@@ -1,6 +1,8 @@
 /**
- * Marks short inline code without spaces (flags, identifiers like `-O2`) so
- * it stays on one line. Longer code is left to wrap so it can't widen the page.
+ * Marks short inline code without spaces (flags, identifiers like `-O2`) as a
+ * token that moves to the next line whole instead of splitting. Character
+ * count can't promise it fits, so the CSS still wraps it inside its own box
+ * when it is wider than the column. Longer code wraps like normal text.
  */
 type Node = {
   type: string;
@@ -25,7 +27,7 @@ function mark(node: Node) {
         const classes = (child.properties?.className as string[]) ?? [];
         child.properties = {
           ...child.properties,
-          className: [...classes, "nowrap"],
+          className: [...classes, "token"],
         };
       }
       continue;
