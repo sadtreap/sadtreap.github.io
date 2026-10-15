@@ -3,6 +3,8 @@
 
 # Except these files & folders
 !/src
+!/scripts
+!/tests
 !/public
 !/.github
 !tsconfig.json
@@ -20,3 +22,4 @@
 # Ignore content and post images
 src/content/
 src/assets/images/
+public/pagefind/

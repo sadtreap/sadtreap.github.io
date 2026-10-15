@@ -1,31 +1,30 @@
+import {
+  classNames,
+  isElement,
+  nodeText,
+  type RehypeNode,
+} from "./rehypeUtils";
+
 /**
  * Copies each GFM footnote next to its reference as a margin note.
- *
- * The footnote list at the end of the post stays as it is; the copy is
- * hidden from assistive tech and shown in the side column on wide screens.
- * Notes with block content (lists, code, tables) stay in the list only,
- * since a block inside the inline note would break out of it.
+ * The original footnote list stays accessible and unchanged. Block content
+ * stays in that list, since it cannot be placed inside an inline note.
  */
-type Node = {
-  type: string;
-  tagName?: string;
-  properties?: Record<string, unknown>;
-  children?: Node[];
-  value?: string;
-};
+const isFootnotes = (node: RehypeNode) =>
+  isElement(node, "section") && node.properties?.dataFootnotes !== undefined;
 
-const isElement = (node: Node, tagName?: string) =>
-  node.type === "element" && (!tagName || node.tagName === tagName);
+const isSidenote = (node: RehypeNode) =>
+  isElement(node, "span") && classNames(node).includes("sidenote");
 
-function walk(node: Node, visit: (node: Node) => void) {
-  visit(node);
+function walk(node: RehypeNode, visit: (node: RehypeNode) => void | false) {
+  if (visit(node) === false) return;
   node.children?.forEach(child => walk(child, visit));
 }
 
-const isBlank = (node: Node) =>
+const isBlank = (node: RehypeNode) =>
   node.type === "text" && !String(node.value ?? "").trim();
 
-function inlineContent(item: Node): Node[] | null {
+function inlineContent(item: RehypeNode): RehypeNode[] | null {
   const children = item.children ?? [];
   if (children.some(child => !isElement(child, "p") && !isBlank(child))) {
     return null;
@@ -40,56 +39,84 @@ function inlineContent(item: Node): Node[] | null {
           isElement(child, "a") &&
           child.properties?.dataFootnoteBackref !== undefined
         )
-    )
-    .map(child => structuredClone(child));
+    );
+}
+
+function copyContent(content: RehypeNode[]): RehypeNode[] {
+  const copy = structuredClone(content);
+  for (const child of copy) {
+    walk(child, node => {
+      if (!node.properties) return;
+      // Fragment links must keep targeting the original, accessible footnotes.
+      delete node.properties.id;
+      if (
+        (isElement(node, "a") && node.properties.href !== undefined) ||
+        node.properties.tabIndex !== undefined
+      ) {
+        node.properties.tabIndex = -1;
+      }
+    });
+  }
+  return copy;
+}
+
+function insertSidenotes(parent: RehypeNode, notes: Map<string, RehypeNode[]>) {
+  if (isFootnotes(parent) || isSidenote(parent)) return;
+  const children = parent.children;
+  if (!children) return;
+  let withNotes: RehypeNode[] | undefined;
+
+  for (let index = 0; index < children.length; index++) {
+    const child = children[index];
+    withNotes?.push(child);
+    insertSidenotes(child, notes);
+    if (!isElement(child, "sup")) continue;
+
+    const ref = child.children?.find(
+      node =>
+        isElement(node, "a") && node.properties?.dataFootnoteRef !== undefined
+    );
+    const href = ref?.properties?.href;
+    if (!ref || typeof href !== "string" || !href.startsWith("#")) continue;
+    const content = notes.get(href.slice(1));
+    if (!content || (children[index + 1] && isSidenote(children[index + 1]))) {
+      continue;
+    }
+
+    withNotes ??= children.slice(0, index + 1);
+    withNotes.push({
+      type: "element",
+      tagName: "span",
+      properties: { className: ["sidenote"], ariaHidden: "true" },
+      children: [
+        {
+          type: "element",
+          tagName: "span",
+          properties: { className: ["sidenote-number"] },
+          children: [{ type: "text", value: nodeText(ref) }],
+        },
+        ...copyContent(content),
+      ],
+    });
+  }
+  // Only traverse original nodes; copied footnotes may contain more references.
+  if (withNotes) parent.children = withNotes;
 }
 
 export function rehypeSidenotes() {
-  return (tree: Node) => {
-    const notes = new Map<string, Node[]>();
+  return (tree: RehypeNode) => {
+    const notes = new Map<string, RehypeNode[]>();
     walk(tree, node => {
-      if (
-        isElement(node, "li") &&
-        String(node.properties?.id ?? "").includes("fn-")
-      ) {
-        const content = inlineContent(node);
-        if (content) notes.set(String(node.properties?.id), content);
-      }
+      if (!isFootnotes(node)) return;
+      walk(node, item => {
+        if (!isElement(item, "li") || typeof item.properties?.id !== "string") {
+          return;
+        }
+        const content = inlineContent(item);
+        if (content) notes.set(item.properties.id, content);
+      });
+      return false;
     });
-    if (notes.size === 0) return;
-
-    walk(tree, parent => {
-      const children = parent.children;
-      if (!children) return;
-      for (let i = children.length - 1; i >= 0; i--) {
-        const sup = children[i];
-        if (!isElement(sup, "sup")) continue;
-        const ref = sup.children?.find(
-          child =>
-            isElement(child, "a") &&
-            child.properties?.dataFootnoteRef !== undefined
-        );
-        const id = String(ref?.properties?.href ?? "").replace(/^#/, "");
-        const content = notes.get(id);
-        if (!ref || !content) continue;
-
-        const label =
-          ref.children?.map(child => child.value ?? "").join("") ?? "";
-        children.splice(i + 1, 0, {
-          type: "element",
-          tagName: "span",
-          properties: { className: ["sidenote"], ariaHidden: "true" },
-          children: [
-            {
-              type: "element",
-              tagName: "span",
-              properties: { className: ["sidenote-number"] },
-              children: [{ type: "text", value: label }],
-            },
-            ...content,
-          ],
-        });
-      }
-    });
+    if (notes.size > 0) insertSidenotes(tree, notes);
   };
 }

@@ -41,74 +41,135 @@ const t = useTranslations(locale);
 </Layout>
 
 <script>
+  type SearchUI = { triggerSearch: (query: string) => void };
+  const searchInstances = new WeakMap<HTMLElement, SearchUI>();
+  const pendingSearches = new WeakSet<HTMLElement>();
+
+  function syncSearchQuery(container: HTMLElement, search: SearchUI) {
+    const query = new URLSearchParams(window.location.search).get("q") ?? "";
+    const input = container.querySelector<HTMLInputElement>(
+      ".pagefind-ui__search-input"
+    );
+    if (input?.value === query) return;
+
+    if (query) {
+      search.triggerSearch(query);
+    } else {
+      // Pagefind's triggerSearch ignores empty terms; use its clear control.
+      container
+        .querySelector<HTMLButtonElement>(".pagefind-ui__search-clear")
+        ?.click();
+    }
+  }
+
+  function updateSearchQuery(container: HTMLElement, query: string) {
+    if (!container.isConnected) return;
+
+    const url = new URL(window.location.href);
+    if (query.trim()) {
+      url.searchParams.set("q", query);
+    } else {
+      url.searchParams.delete("q");
+    }
+    if (url.href !== window.location.href) {
+      history.replaceState(history.state, "", url);
+    }
+  }
+
   function initSearch() {
-    const pageFindSearch: HTMLElement | null =
-      document.querySelector("#pagefind-search");
+    const pageFindSearch =
+      document.querySelector<HTMLElement>("#pagefind-search");
+    if (!pageFindSearch || pendingSearches.has(pageFindSearch)) return;
 
-    if (!pageFindSearch) return;
+    const existingSearch = searchInstances.get(pageFindSearch);
+    if (existingSearch) {
+      syncSearchQuery(pageFindSearch, existingSearch);
+      return;
+    }
 
-    const bundlePath = pageFindSearch?.dataset?.bundlePath;
+    const bundlePath = pageFindSearch.dataset.bundlePath;
     if (!bundlePath) return;
 
-    const params = new URLSearchParams(window.location.search);
+    pendingSearches.add(pageFindSearch);
+    pageFindSearch.setAttribute("aria-busy", "true");
 
-    const onIdle = window.requestIdleCallback || (cb => setTimeout(cb, 1));
+    async function loadSearch() {
+      try {
+        if (!pageFindSearch?.isConnected) return;
+        // @ts-expect-error — Missing types for @pagefind/default-ui package.
+        const { PagefindUI } = await import("@pagefind/default-ui");
+        if (!pageFindSearch.isConnected) return;
 
-    onIdle(async () => {
-      // @ts-expect-error — Missing types for @pagefind/default-ui package.
-      const { PagefindUI } = await import("@pagefind/default-ui");
-
-      // Display warning inn dev mode
-      if (import.meta.env.DEV) {
-        pageFindSearch.innerHTML = `
+        if (import.meta.env.DEV) {
+          pageFindSearch.innerHTML = `
             <div class="bg-muted/75 rounded p-4 space-y-4 mb-4">
               <p><strong>DEV mode Warning! </strong>You need to build the project at least once to see the search results during development.</p>
               <code class="block bg-black text-white px-2 py-1 rounded">pnpm run build</code>
             </div>
           `;
-      }
+        }
 
-      // Init pagefind ui
-      const search = new PagefindUI({
-        element: "#pagefind-search",
-        bundlePath,
-        showImages: false,
-        showSubResults: true,
-        processTerm: function (term: string) {
-          params.set("q", term); // Update the `q` parameter in the URL
-          history.replaceState(history.state, "", "?" + params.toString()); // Push the new URL without reloading
-          return term;
-        },
-      });
+        const search: SearchUI = new PagefindUI({
+          element: pageFindSearch,
+          bundlePath,
+          showImages: false,
+          showSubResults: true,
+        });
+        searchInstances.set(pageFindSearch, search);
 
-      // If search param exists (eg: search?q=astro), trigger search
-      const query = params.get("q");
-      if (query) {
-        search.triggerSearch(query);
-      }
+        // Delegate to the stable container so replacing controls keeps their handlers.
+        pageFindSearch.addEventListener("input", event => {
+          if (
+            event.target instanceof HTMLInputElement &&
+            event.target.matches(".pagefind-ui__search-input")
+          ) {
+            updateSearchQuery(pageFindSearch, event.target.value);
+          }
+        });
+        pageFindSearch.addEventListener("click", event => {
+          if (
+            event.target instanceof Element &&
+            event.target.closest(".pagefind-ui__search-clear")
+          ) {
+            updateSearchQuery(pageFindSearch, "");
+          }
+        });
+        pageFindSearch.addEventListener("keydown", event => {
+          if (
+            event.key === "Escape" &&
+            event.target instanceof HTMLInputElement &&
+            event.target.matches(".pagefind-ui__search-input")
+          ) {
+            updateSearchQuery(pageFindSearch, "");
+          }
+        });
 
-      // Reset search param if search input is cleared
-      const searchInput = document.querySelector(".pagefind-ui__search-input");
-      const clearButton = document.querySelector(".pagefind-ui__search-clear");
-      searchInput?.addEventListener("input", resetSearchParam);
-      clearButton?.addEventListener("click", resetSearchParam);
-
-      function resetSearchParam(e: Event) {
-        if ((e.target as HTMLInputElement)?.value.trim() === "") {
-          history.replaceState(history.state, "", window.location.pathname);
+        // Read the current URL after loading, including persisted navigation.
+        syncSearchQuery(pageFindSearch, search);
+      } catch {
+        if (!pageFindSearch?.isConnected) return;
+        const message = document.createElement("p");
+        message.setAttribute("role", "alert");
+        message.textContent = document.documentElement.lang.startsWith("ko")
+          ? "검색을 불러오지 못했습니다. 페이지를 새로고침해 주세요."
+          : "Search could not be loaded. Please refresh the page.";
+        pageFindSearch.replaceChildren(message);
+      } finally {
+        if (pageFindSearch) {
+          pendingSearches.delete(pageFindSearch);
+          pageFindSearch.removeAttribute("aria-busy");
         }
       }
-    });
+    }
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(() => void loadSearch(), { timeout: 1000 });
+    } else {
+      setTimeout(() => void loadSearch(), 0);
+    }
   }
 
-  document.addEventListener("astro:after-swap", () => {
-    const pagefindSearch = document.querySelector("#pagefind-search");
-
-    // if pagefind search form already exists, don't initialize search component
-    if (pagefindSearch && pagefindSearch.querySelector("form")) return;
-
-    initSearch();
-  });
+  document.addEventListener("astro:after-swap", initSearch);
   initSearch();
 </script>
 

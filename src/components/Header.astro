@@ -29,6 +29,7 @@ const links = [
 <a
   id="skip-to-content"
   href="#main-content"
+  data-astro-reload
   class="bg-background text-accent absolute inset-s-16 -top-full z-50 px-3 py-2 focus:top-4"
 >
   {t.a11y.skipToContent}
@@ -71,10 +72,11 @@ const links = [
         features.lightAndDarkMode && (
           <button
             id="theme-btn"
+            type="button"
             class="relative"
             title={t.a11y.toggleTheme}
-            aria-label="auto"
-            aria-live="polite"
+            aria-label={t.a11y.toggleTheme}
+            aria-pressed="false"
           >
             <IconMoon class="dark:hidden" />
             <IconSunHigh class="hidden dark:block" />
@@ -83,6 +85,7 @@ const links = [
       }
       <button
         id="menu-btn"
+        type="button"
         class="menu-btn"
         aria-label={t.a11y.openMenu}
         aria-expanded="false"
@@ -207,52 +210,61 @@ const links = [
 </style>
 
 <script>
-  function toggleNav() {
-    const menuBtn = document.querySelector<HTMLButtonElement>("#menu-btn");
-    if (!menuBtn) return;
-
+  function setMenuOpen(menuBtn: HTMLButtonElement, open: boolean) {
     const openLabel = menuBtn.dataset.labelOpen ?? "Open menu";
     const closeLabel = menuBtn.dataset.labelClose ?? "Close menu";
-
-    menuBtn.addEventListener("click", () => {
-      const open = menuBtn.getAttribute("aria-expanded") !== "true";
-      menuBtn.setAttribute("aria-expanded", String(open));
-      menuBtn.setAttribute("aria-label", open ? closeLabel : openLabel);
-    });
+    menuBtn.setAttribute("aria-expanded", String(open));
+    menuBtn.setAttribute("aria-label", open ? closeLabel : openLabel);
   }
 
-  function handleSkipToContent() {
-    const skipLink = document.getElementById("skip-to-content");
-    if (!skipLink) return;
-    skipLink.addEventListener("click", e => {
-      if (
-        e.defaultPrevented ||
-        e.metaKey ||
-        e.ctrlKey ||
-        e.shiftKey ||
-        e.button !== 0
-      )
-        return;
-      e.preventDefault();
-      const target = document.getElementById("main-content");
-      if (target) {
-        target.setAttribute("tabindex", "-1");
-        target.addEventListener(
-          "blur",
-          () => target.removeAttribute("tabindex"),
-          {
-            once: true,
-          }
-        );
-        target.focus();
-        target.scrollIntoView({ behavior: "smooth" });
-      }
-    });
-  }
+  // One listener also covers headers replaced by client-side navigation.
+  document.addEventListener("click", event => {
+    if (!(event.target instanceof Element) || event.defaultPrevented) return;
 
-  toggleNav();
-  document.addEventListener("astro:after-swap", toggleNav);
+    const menuBtn = event.target.closest<HTMLButtonElement>("#menu-btn");
+    if (menuBtn) {
+      setMenuOpen(menuBtn, menuBtn.getAttribute("aria-expanded") !== "true");
+      return;
+    }
 
-  handleSkipToContent();
-  document.addEventListener("astro:after-swap", handleSkipToContent);
+    if (
+      !event.target.closest("#skip-to-content") ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      event.button !== 0
+    )
+      return;
+
+    const target = document.getElementById("main-content");
+    if (!target) return;
+
+    event.preventDefault();
+    if (!target.hasAttribute("tabindex")) {
+      target.setAttribute("tabindex", "-1");
+      target.addEventListener(
+        "blur",
+        () => target.removeAttribute("tabindex"),
+        {
+          once: true,
+        }
+      );
+    }
+    target.focus({ preventScroll: true });
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    target.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth" });
+  });
+
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
+    const menuBtn = document.querySelector<HTMLButtonElement>(
+      "#menu-btn[aria-expanded='true']"
+    );
+    if (!menuBtn) return;
+    setMenuOpen(menuBtn, false);
+    menuBtn.focus();
+  });
 </script>

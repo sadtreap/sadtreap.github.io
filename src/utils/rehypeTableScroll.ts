@@ -1,24 +1,24 @@
 /** Wraps every table in a div that scrolls sideways on narrow screens. */
-type Node = {
-  type: string;
-  tagName?: string;
-  properties?: Record<string, unknown>;
-  children?: Node[];
-};
+import { classNames, isElement, type RehypeNode } from "./rehypeUtils";
 
-function wrapTables(node: Node) {
-  node.children = node.children?.map(child => {
-    if (child.type === "element" && child.tagName === "table") {
-      return {
+function wrapTables(node: RehypeNode) {
+  const children = node.children;
+  if (!children) return;
+
+  const isWrapper =
+    isElement(node, "div") && classNames(node).includes("table-scroll");
+  for (let index = 0; index < children.length; index++) {
+    const child = children[index];
+    wrapTables(child);
+    if (isElement(child, "table") && !isWrapper) {
+      children[index] = {
         type: "element",
         tagName: "div",
         properties: { className: ["table-scroll"] },
         children: [child],
       };
     }
-    wrapTables(child);
-    return child;
-  });
+  }
 }
 
 export function rehypeTableScroll() {
