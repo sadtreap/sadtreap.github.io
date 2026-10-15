@@ -1,0 +1,95 @@
+---
+import { describe, renderPlane } from "./interval";
+import "./widget.css";
+
+type Props = {
+  /** Priorities in key order, a permutation of 1..n. */
+  priorities?: number[];
+  /** 0-based keys. */
+  i?: number;
+  j?: number;
+};
+
+const { priorities = [5, 3, 7, 1, 6, 4, 8, 2], i = 6, j = 3 } = Astro.props;
+---
+
+<div
+  class="tp"
+  data-tp-interval
+  data-pri={JSON.stringify(priorities)}
+  data-i={i}
+  data-j={j}
+  data-pagefind-ignore
+>
+  <div class="tp-plane">
+    <div data-plane set:html={renderPlane(priorities, i, j)} />
+    <div class="tp-picks" role="group" aria-label="j 고르기">
+      {
+        priorities.map((_, k) => (
+          <button
+            type="button"
+            data-j={k}
+            aria-pressed={k === j ? "true" : "false"}
+            disabled={k === i}
+          >
+            <i>x</i>
+            <sub>{k + 1}</sub>
+          </button>
+        ))
+      }
+    </div>
+  </div>
+  <p class="tp-note" aria-live="polite" set:html={describe(priorities, i, j)} />
+  <div class="tp-controls">
+    <button class="tp-btn" type="button" data-shuffle>우선순위 다시 섞기</button
+    >
+  </div>
+</div>
+
+<script>
+  import { describe, renderPlane } from "./interval";
+  import { shuffled } from "./treap";
+
+  function setup(root: HTMLElement) {
+    const plane = root.querySelector<HTMLElement>("[data-plane]")!;
+    const note = root.querySelector<HTMLElement>(".tp-note")!;
+    const picks = [...root.querySelectorAll<HTMLButtonElement>("[data-j]")];
+    const i = Number(root.dataset.i);
+    let pri: number[] = JSON.parse(root.dataset.pri!);
+    let j = Number(root.dataset.j);
+
+    const update = () => {
+      plane.innerHTML = renderPlane(pri, i, j);
+      note.innerHTML = describe(pri, i, j);
+      picks.forEach(b =>
+        b.setAttribute("aria-pressed", String(Number(b.dataset.j) === j))
+      );
+    };
+
+    picks.forEach(b =>
+      b.addEventListener("click", () => {
+        j = Number(b.dataset.j);
+        update();
+      })
+    );
+    plane.addEventListener("click", event => {
+      const hit = (event.target as Element).closest<SVGElement>("[data-col]");
+      if (!hit) return;
+      j = Number(hit.dataset.col);
+      update();
+    });
+    root.querySelector("[data-shuffle]")!.addEventListener("click", () => {
+      pri = shuffled(pri.length);
+      update();
+    });
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    document
+      .querySelectorAll<HTMLElement>("[data-tp-interval]:not([data-ready])")
+      .forEach(root => {
+        root.dataset.ready = "";
+        setup(root);
+      });
+  });
+</script>

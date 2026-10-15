@@ -1,0 +1,55 @@
+---
+import { build, pyRandom } from "./treap";
+import "./widget.css";
+
+type Props = { n?: number; seed?: number };
+
+const { n = 512, seed = 15 } = Astro.props;
+
+// Same as the post's Python code: the i-th key gets priority p[i].
+const next = pyRandom(seed);
+const p = Array.from({ length: n }, next);
+
+const panels = [
+  // Keys 0..n-1, so priorities in key order are just p.
+  { title: "키 고정", pri: p },
+  // The attack sends the ranks of p: sorted by key, priorities ascend.
+  { title: "키 = 난수", pri: [...p].sort((a, b) => a - b) },
+].map(({ title, pri }) => {
+  const { parent, depth, height } = build(pri);
+  const d = parent
+    .map((q, k) =>
+      q < 0 ? "" : `M${k + 0.5} ${depth[k] + 0.5}L${q + 0.5} ${depth[q] + 0.5}`
+    )
+    .join("");
+  return { title, height, d };
+});
+---
+
+<div class="tp" data-pagefind-ignore>
+  <div class="tp-panels">
+    {
+      panels.map(({ title, height, d }) => (
+        <div class="tp-panel">
+          <p class="tp-head">
+            <b>{title}</b>
+            <span>높이 {height}</span>
+          </p>
+          <svg
+            class="tp-svg"
+            viewBox={`0 0 ${n} ${n}`}
+            role="img"
+            aria-label={`노드 ${n}개, 높이 ${height}`}
+          >
+            <rect class="tp-canvas" width={n} height={n} rx={n / 100} />
+            <path
+              class="tp-edge tp-thin"
+              d={d}
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+        </div>
+      ))
+    }
+  </div>
+</div>

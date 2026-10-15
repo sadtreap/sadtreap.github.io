@@ -1,0 +1,110 @@
+---
+title: "랜덤 Treap의 로그 시간은 누구에 대한 평균인가"
+description: "Treap의 기대 깊이 O(log n)은 키가 난수와 상관없이 정해져 있을 때만 성립한다. 시드를 아는 공격자 앞에서는 같은 코드가 높이 n짜리 사슬이 된다."
+pubDatetime: 2026-10-16T00:46:02+09:00
+tags:
+  - 알고리즘
+---
+
+import TreapPair from "@/components/experiments/treap/TreapPair.astro";
+import IntervalMin from "@/components/experiments/treap/IntervalMin.astro";
+import HeightCompare from "@/components/experiments/treap/HeightCompare.astro";
+
+Treap의 탐색이 평균 $O(\log n)$이라는 건 다들 알지만, 도대체 어디에서 취한 평균인지 깊게 파고드는 경우는 드물다. 키를 먼저 정해 두고 우선순위만 무작위로 뽑는 경우와, 누군가 내 난수가 어떤 순서로 나올지 미리 알고 거기에 맞춰 키를 골라 넣는 경우는 완전히 다르다. 앞의 경우엔 평균 깊이가 $O(\log n)$이지만, 뒤의 경우엔 트리가 한 줄로 늘어선다. codeforces에서 고정 시드를 쓴 코드가 터지는 이유도 여기에 있다.
+
+(편의상 루트가 최솟값을 갖는 Min-Heap Treap을 기준으로 설명한다.)
+
+---
+
+## 1. 균형을 만드는 건 난수가 아니라 상대 순서다
+
+Treap은 키(BST)와 우선순위(Heap) 쌍으로 트리를 유일하게 결정한다(Cartesian tree). 하지만 유일성이 곧 균형을 뜻하진 않는다. 키 순서대로 우선순위가 커지면 트리는 곧바로 높이 $n$짜리 사슬이 된다.
+
+핵심은 독립 난수를 썼는가가 아니라 키 순서 위에서 우선순위의 상대 순서가 uniform permutation인가다.
+
+- $i$번째 키의 우선순위를 구간 $[i, i+0.1]$에서 독립적으로 뽑아보자. 키 순서와 우선순위 순서가 일치해 무조건 사슬이 된다.
+- 반대로 난수끼리 독립이 아니더라도, 고정된 키들에 $1\dots n$의 균등 무작위 순열만 배정하면 트리 분포는 완벽히 안전하다.
+
+<figure>
+  <TreapPair />
+  <figcaption>왼쪽은 정렬된 키 $1\dots 7$에 무작위 순열이 매칭된 균형 Treap, 오른쪽은 같은 우선순위들이 키 순서와 일치하게 매칭되어 높이 7의 사슬이 된 Treap이다. 원 안의 숫자가 우선순위, 아래 숫자가 키다.</figcaption>
+</figure>
+
+---
+
+## 2. O(log n)은 구간 최솟값에서 나온다
+
+정렬된 키 $x_1 < \dots < x_n$에서 $x_j$가 $x_i$의 조상이 될 필요충분조건은 **인덱스 구간 $[\min(i,j), \max(i,j)]$ 안에서 $x_j$의 우선순위가 최솟값**일 것뿐이다.
+
+<figure>
+  <IntervalMin />
+  <figcaption>가로는 키 순서, 세로는 우선순위다. 붉은 점이 $x_i$, 붉은 선이 $x_i$의 조상 경로다.</figcaption>
+</figure>
+
+우선순위 순열이 균등하면 길이 $\vert{}i-j\vert{}+1$인 구간에서 최솟값이 $x_j$일 확률은 $\frac{1}{\vert{}i-j\vert{}+1}$이다. 깊이는 조상 수의 합이므로 기댓값의 선형성을 쓰면 조화수가 튀어나온다.
+
+$$
+\mathbb{E}[D_i] = \sum_{j \neq i} \frac{1}{\vert{}i-j\vert{}+1} = H_i + H_{n+1-i} - 2 = O(\log n)
+$$
+
+---
+
+## 3. 시드를 알면 최장 높이 사슬은 확정이다
+
+공격자가 PRNG 수열 $p_1, \dots, p_n$을 미리 알고, $i$번째 삽입 키를 $k_i = p_i$ (또는 순위)로 준다고 하자. 최종 Treap은 무조건 높이 $n$짜리 사슬이 된다.
+
+$n=512$의 동일한 난수열로 직접 실험해 보면 결과는 명확하다.
+
+```python
+import random
+
+SEED = 15  # 타겟 코드에 박혀 있는 고정 시드
+
+def height(nodes):
+    nodes = sorted(nodes)
+    def h(lo, hi):
+        if lo == hi:
+            return 0
+        root = min(range(lo, hi), key=lambda t: nodes[t][1])
+        return 1 + max(h(lo, root), h(root + 1, hi))
+    return h(0, len(nodes))
+
+def target(keys):
+    rng = random.Random(SEED)
+    return height([(k, rng.random()) for k in keys])
+
+def attack(n):
+    rng = random.Random(SEED)
+    p = [rng.random() for _ in range(n)]
+    order = sorted(p)
+    return [order.index(x) for x in p]
+
+n = 512
+print("nodes:", n)
+print("fixed_keys_height:", target(range(n)))
+print("priority_dependent_keys_height:", target(attack(n)))
+```
+
+```text
+nodes: 512
+fixed_keys_height: 22
+priority_dependent_keys_height: 512
+```
+
+키를 고정했을 때 높이 22던 트리가, 난수를 보고 키를 맞춘 순간 단 한 번의 예외도 없이 **정확히 높이 512짜리 직선 사슬**로 폭발한다. 더 정교한 PRNG나 난수 히스토그램 검사로는 이 상관관계를 막을 수 없다.
+
+<figure>
+  <HeightCompare />
+</figure>
+
+---
+
+## 4. 결론: 공격자 모델에 따라 다르다
+
+랜덤 자료구조의 성능은 결국 **입력을 넣는 쪽이 어디까지 관측할 수 있는가**에 갈린다.
+
+| 공격자 모델 | 기대 깊이 유도 성립 여부 | 예시 |
+| --- | --- | --- |
+| **Oblivious** (우선순위를 모른 채 키 고정) | **성립함** | 매번 시드가 바뀌는 환경, 오프라인 테스트 |
+| **Adaptive** (응답 시간/결과를 보고 쿼리 조작) | **깨짐 (조건부 분포 왜곡)** | 온라인 서비스, 타이밍 사이드채널 |
+| **Seed-aware** (전체 난수열을 털림) | **완전히 깨짐 ($O(n)$ 사슬)** | 고정 시드 PRNG 기반 Hack |

@@ -1,0 +1,41 @@
+---
+import { renderPanel } from "./pair";
+import "./widget.css";
+
+type Props = { priorities?: number[] };
+
+const { priorities = [3, 6, 2, 7, 1, 4, 5] } = Astro.props;
+const sorted = [...priorities].sort((a, b) => a - b);
+---
+
+<div class="tp" data-tp-pair data-pagefind-ignore>
+  <div class="tp-panels tp-stack">
+    <div
+      class="tp-panel"
+      data-shuffled
+      set:html={renderPanel("무작위로 섞은 순서", priorities)}
+    />
+    <div class="tp-panel" set:html={renderPanel("키와 같은 순서", sorted)} />
+  </div>
+  <div class="tp-controls">
+    <button class="tp-btn" type="button">왼쪽 다시 섞기</button>
+  </div>
+</div>
+
+<script>
+  import { renderPanel } from "./pair";
+  import { shuffled } from "./treap";
+
+  document.addEventListener("astro:page-load", () => {
+    document
+      .querySelectorAll<HTMLElement>("[data-tp-pair]:not([data-ready])")
+      .forEach(root => {
+        root.dataset.ready = "";
+        const panel = root.querySelector<HTMLElement>("[data-shuffled]")!;
+        const n = panel.querySelectorAll(".tp-node").length;
+        root.querySelector("button")!.addEventListener("click", () => {
+          panel.innerHTML = renderPanel("무작위로 섞은 순서", shuffled(n));
+        });
+      });
+  });
+</script>
