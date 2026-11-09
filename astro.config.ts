@@ -32,8 +32,7 @@ export default defineConfig({
         const pathname = new URL(page).pathname;
         return (
           !/^\/(?:search|404)(?:\/|\.html)?$/.test(pathname) &&
-          (config.features?.showArchives !== false ||
-            pathname !== "/archives/")
+          (config.features?.showArchives !== false || pathname !== "/archives/")
         );
       },
     }),
