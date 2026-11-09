@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "lint": "eslint .",
+    "check:seo": "node scripts/check-seo.mjs",
     "test": "node --test tests/*.test.mjs"
   },
   "dependencies": {

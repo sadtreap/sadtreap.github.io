@@ -1,5 +1,5 @@
 ---
-import { getRelativeLocaleUrl } from "astro:i18n";
+import { getAssetPath } from "@/utils/withBase";
 import { useTranslations } from "@/i18n";
 import config from "@/config";
 
@@ -16,7 +16,7 @@ const currentYear = new Date().getFullYear();
       {t.footer.license}
     </a>
     {socials.map(({ name, url }) => <a href={url}>{name}</a>)}
-    <a href={getRelativeLocaleUrl(locale, "rss.xml")}>RSS</a>
+    <a href={getAssetPath("rss.xml")}>RSS</a>
   </span>
 </footer>
 

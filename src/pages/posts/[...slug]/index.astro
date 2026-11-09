@@ -75,6 +75,9 @@ const authorInitial = author.charAt(0);
 
 <PostLayout
   title={`${title} | ${config.site.title}`}
+  headline={title}
+  {author}
+  {tags}
   description={description}
   ogImage={ogImage}
   canonicalURL={canonicalURL}

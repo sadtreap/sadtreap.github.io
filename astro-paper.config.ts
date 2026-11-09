@@ -7,6 +7,7 @@ export default defineAstroPaperConfig({
     description: "Personal research and practical experiences.",
     author: "JooYeong Kim",
     profile: "https://github.com/sadtreap",
+    googleVerification: "qiHQuF2-IxZ0e06AQZ2mwts5PQblfwlqnt0fbazcFho",
     focus: "C++, 어셈블리, 알고리즘, 벤치마크",
     ogImage: "default-og.png",
     lang: "ko",

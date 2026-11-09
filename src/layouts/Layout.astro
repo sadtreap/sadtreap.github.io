@@ -1,7 +1,6 @@
 ---
 import { Font } from "astro:assets";
 import { ClientRouter } from "astro:transitions";
-import { getRelativeLocaleUrl } from "astro:i18n";
 import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 import { getAssetPath } from "@/utils/withBase";
 import config from "@/config";
@@ -15,6 +14,8 @@ type Props = {
   ogImage?: string;
   canonicalURL?: string;
   ogType?: "website" | "article";
+  author?: string;
+  noindex?: boolean;
 };
 
 const { site } = config;
@@ -25,13 +26,44 @@ const {
   ogImage = resolveDefaultOgImagePath(config),
   canonicalURL = new URL(Astro.url.pathname, Astro.site).href,
   ogType = "website",
+  author = site.author,
+  noindex = false,
 } = Astro.props;
 
 const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url);
-const rssHref = getRelativeLocaleUrl(
-  Astro.currentLocale ?? config.site.lang,
-  "rss.xml"
-);
+// File endpoints must not pass through locale page routing: /rss.xml/ is a 404.
+const rssHref = getAssetPath("rss.xml");
+const siteURL = new URL(site.url).href;
+const language = Astro.currentLocale ?? site.lang;
+const structuredData = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${siteURL}#website`,
+      url: siteURL,
+      name: site.title,
+      description: site.description,
+      inLanguage: site.lang,
+      publisher: { "@id": `${siteURL}#author` },
+    },
+    {
+      "@type": "Person",
+      "@id": `${siteURL}#author`,
+      name: site.author,
+      ...(site.profile && { url: site.profile, sameAs: [site.profile] }),
+    },
+    {
+      "@type": "WebPage",
+      "@id": `${canonicalURL}#webpage`,
+      url: canonicalURL,
+      name: title,
+      description,
+      inLanguage: language,
+      isPartOf: { "@id": `${siteURL}#website` },
+    },
+  ],
+};
 ---
 
 <!doctype html>
@@ -54,7 +86,13 @@ const rssHref = getRelativeLocaleUrl(
     <title>{title}</title>
     <meta name="title" content={title} />
     <meta name="description" content={description} />
-    <meta name="author" content={site.author} />
+    <meta name="author" content={author} />
+    <meta
+      name="robots"
+      content={noindex
+        ? "noindex, follow"
+        : "index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"}
+    />
     <link rel="sitemap" href={getAssetPath("sitemap-index.xml")} />
 
     <!-- Open Graph -->
@@ -64,6 +102,10 @@ const rssHref = getRelativeLocaleUrl(
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:image" content={socialImageURL} />
+    <meta
+      property="og:locale"
+      content={language === "ko" ? "ko_KR" : language.replace("-", "_")}
+    />
 
     <!-- Twitter / X -->
     <meta property="twitter:card" content="summary_large_image" />
@@ -79,6 +121,16 @@ const rssHref = getRelativeLocaleUrl(
       title={site.title}
       href={new URL(rssHref, Astro.site)}
     />
+    <link rel="describedby" type="text/plain" href={getAssetPath("llms.txt")} />
+    {
+      !noindex && (
+        <script
+          type="application/ld+json"
+          is:inline
+          set:html={JSON.stringify(structuredData).replace(/</g, "\\u003c")}
+        />
+      )
+    }
 
     <!-- Filled at runtime by theme.ts to match the current background colour -->
     <meta name="theme-color" content="" />
@@ -92,6 +144,16 @@ const rssHref = getRelativeLocaleUrl(
           name="google-site-verification"
           content={site.googleVerification}
         />
+      )
+    }
+    {
+      site.naverVerification && (
+        <meta name="naver-site-verification" content={site.naverVerification} />
+      )
+    }
+    {
+      site.bingVerification && (
+        <meta name="msvalidate.01" content={site.bingVerification} />
       )
     }
 

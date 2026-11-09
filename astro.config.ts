@@ -24,11 +24,18 @@ import config from "./astro-paper.config";
 
 export default defineConfig({
   site: config.site.url,
+  trailingSlash: "always",
   integrations: [
     mdx(),
     sitemap({
-      filter: page =>
-        config.features?.showArchives !== false || !page.endsWith("/archives/"),
+      filter: page => {
+        const pathname = new URL(page).pathname;
+        return (
+          !/^\/(?:search|404)(?:\/|\.html)?$/.test(pathname) &&
+          (config.features?.showArchives !== false ||
+            pathname !== "/archives/")
+        );
+      },
     }),
   ],
   i18n: {
@@ -81,6 +88,16 @@ export default defineConfig({
   env: {
     schema: {
       PUBLIC_GOOGLE_SITE_VERIFICATION: envField.string({
+        access: "public",
+        context: "client",
+        optional: true,
+      }),
+      PUBLIC_NAVER_SITE_VERIFICATION: envField.string({
+        access: "public",
+        context: "client",
+        optional: true,
+      }),
+      PUBLIC_BING_SITE_VERIFICATION: envField.string({
         access: "public",
         context: "client",
         optional: true,

@@ -1,9 +1,13 @@
 ---
 import Layout from "./Layout.astro";
 import config from "@/config";
+import { resolveDefaultOgImagePath } from "@/utils/resolveDefaultOgImagePath";
 
 type Props = {
-  title?: string;
+  title: string;
+  headline: string;
+  author: string;
+  tags: string[];
   description?: string;
   ogImage?: string;
   canonicalURL?: string;
@@ -13,28 +17,64 @@ type Props = {
 
 const { site } = config;
 
-const { title, description, ogImage, canonicalURL, pubDatetime, modDatetime } =
-  Astro.props;
+const {
+  title,
+  headline,
+  author,
+  tags,
+  description = site.description,
+  ogImage = resolveDefaultOgImagePath(config),
+  canonicalURL = new URL(Astro.url.pathname, Astro.site).href,
+  pubDatetime,
+  modDatetime,
+} = Astro.props;
+const siteURL = new URL(site.url).href;
+const socialImageURL = new URL(ogImage, Astro.site ?? Astro.url).href;
+const authorData = {
+  "@type": "Person",
+  name: author,
+  ...(author === site.author && {
+    "@id": `${siteURL}#author`,
+    ...(site.profile && { url: site.profile }),
+  }),
+};
+const dateModified = modDatetime ?? pubDatetime;
 
 const structuredData = {
   "@context": "https://schema.org",
   "@type": "BlogPosting",
-  headline: title ?? site.title,
-  image: ogImage,
+  "@id": `${canonicalURL}#article`,
+  url: canonicalURL,
+  mainEntityOfPage: { "@id": `${canonicalURL}#webpage` },
+  isPartOf: { "@id": `${siteURL}#website` },
+  headline,
+  description,
+  image: [socialImageURL],
+  inLanguage: Astro.currentLocale ?? site.lang,
+  keywords: tags,
+  license: "https://creativecommons.org/licenses/by/4.0/",
   ...(pubDatetime && { datePublished: pubDatetime.toISOString() }),
-  ...(modDatetime && { dateModified: modDatetime.toISOString() }),
-  author: [
-    {
-      "@type": "Person",
-      name: site.author,
-      ...(site.profile && { url: site.profile }),
-    },
-  ],
+  ...(dateModified && { dateModified: dateModified.toISOString() }),
+  author: [authorData],
+  publisher: { "@id": `${siteURL}#author` },
 };
 ---
 
-<Layout {title} {description} {ogImage} {canonicalURL} ogType="article">
+<Layout
+  {title}
+  {description}
+  {ogImage}
+  {canonicalURL}
+  {author}
+  ogType="article"
+>
   <Fragment slot="head">
+    {
+      author === site.author && site.profile && (
+        <meta property="article:author" content={site.profile} />
+      )
+    }
+    {tags.map(tag => <meta property="article:tag" content={tag} />)}
     {
       pubDatetime && (
         <meta
