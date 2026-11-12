@@ -1,0 +1,92 @@
+---
+import { FIGS, layout } from "./figures";
+import "./sheets.css";
+
+// arrow: the figures are steps in order; otherwise they are compared side by side.
+type Props = { ids: string[]; arrow?: boolean };
+
+const { ids, arrow = true } = Astro.props;
+const figs = ids.map(id => {
+  const fig = FIGS[id];
+  return { fig, lines: layout(fig) };
+});
+---
+
+<div
+  class="sh"
+  data-sh-row={ids.length > 1 ? "" : undefined}
+  data-pagefind-ignore
+>
+  {
+    figs.map(({ fig, lines }, i) => (
+      <Fragment>
+        {i > 0 && (
+          <span
+            class:list={["sh-to", { "sh-arrow": arrow }]}
+            aria-hidden="true"
+          />
+        )}
+        <div
+          class:list={[
+            "sh-fig",
+            { "sh-groups": fig.groups, "sh-small": fig.small },
+          ]}
+          role="img"
+          aria-label="시트를 위에서 아래로 쌓은 글자 그림"
+        >
+          {lines.map(line => (
+            <div
+              class:list={[
+                "sh-line",
+                `sh-${line.kind}`,
+                { "sh-mv": line.mv, "sh-gap": line.gap },
+              ]}
+            >
+              {fig.groups && <span class="sh-g">{line.group}</span>}
+              <span class="sh-lb">{line.label}</span>
+              <span class="sh-pt">
+                {line.cells.map(c => (
+                  <span class:list={["sh-c", { "sh-on": c.on, "sh-sp": c.sp }]}>
+                    {c.ch === " " ? " " : c.ch}
+                  </span>
+                ))}
+              </span>
+              <span class="sh-nt">{line.note}</span>
+            </div>
+          ))}
+        </div>
+      </Fragment>
+    ))
+  }
+</div>
+
+<script>
+  /*
+   * Two figures sit side by side while they fit; otherwise they are stacked
+   * and the arrow turns down, centred under the first figure's cells.
+   */
+  function fit(row: HTMLElement) {
+    const arrow = row.querySelector<HTMLElement>(".sh-to");
+    row.classList.remove("sh-stack");
+    if (arrow) arrow.style.marginLeft = "";
+    if (row.scrollWidth <= row.clientWidth + 1) return;
+
+    row.classList.add("sh-stack");
+    const cells = row.querySelector<HTMLElement>(".sh-fig .sh-pt");
+    if (!arrow || !cells) return;
+    const left = row.getBoundingClientRect().left + row.clientLeft;
+    const pad = parseFloat(getComputedStyle(row).paddingLeft);
+    const box = cells.getBoundingClientRect();
+    const x = box.left + box.width / 2 - left - pad - arrow.offsetWidth / 2;
+    arrow.style.marginLeft = `${Math.max(0, x)}px`;
+  }
+
+  document.addEventListener("astro:page-load", () => {
+    document
+      .querySelectorAll<HTMLElement>("[data-sh-row]:not([data-ready])")
+      .forEach(row => {
+        row.dataset.ready = "";
+        new ResizeObserver(() => fit(row)).observe(row);
+      });
+  });
+</script>

@@ -1,0 +1,29 @@
+---
+import { GROUP_PAIRS, GROUP_SIZE } from "./figures";
+import "./sheets.css";
+
+const rows = [
+  { k: "그룹", v: GROUP_SIZE.map((_, i) => i), cls: "sh-dim" },
+  { k: "장수", v: GROUP_SIZE, cls: "sh-bold" },
+  { k: "그중 페어", v: GROUP_PAIRS, cls: "" },
+];
+---
+
+<div class="sh" data-pagefind-ignore>
+  <div
+    class="sh-gt"
+    role="img"
+    aria-label="그룹 0부터 25까지의 시트 수와 그중 페어 시트 수"
+  >
+    {
+      rows.map(({ k, v, cls }) => (
+        <Fragment>
+          <span class="sh-gk">{k}</span>
+          {v.map(x => (
+            <span class={cls}>{x}</span>
+          ))}
+        </Fragment>
+      ))
+    }
+  </div>
+</div>
